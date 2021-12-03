@@ -1,6 +1,6 @@
 #################################
 # Created by IB Barcelos
-# Abr, 2021
+# 2021
 ##################################
 
 from idisf import iDISF_scribbles
