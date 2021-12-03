@@ -16,7 +16,6 @@
 
 #include "Image.h"
 #include "iDISF.h"
-#include "iDISF_clust.h"
 
 //=============================================================================
 // Prototypes
