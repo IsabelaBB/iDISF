@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
     char imagePath[255];
     char fileObjSeeds[255];
     char fileSeeds[256];
-    int num_init_seeds, iterations, n_f;
+    int n_0, iterations, n_f;
     int function;
     int all_borders;
     double c1, c2;
@@ -287,10 +287,10 @@ int main(int argc, char *argv[])
         segm = 1;
 
     // some optional args
-    if (strcmp(no, "-") != 0)
-        n_o = atoi(no);
+    if (strcmp(n0, "-") != 0)
+        n_0 = atoi(n0);
     else
-        n_o = -1; // dont reduces the object seed set
+        n_0 = -1; // dont reduces the object seed set
 
     if (strcmp(nb, "-") != 0)
         n_b = atoi(nb);
@@ -380,12 +380,12 @@ int main(int argc, char *argv[])
         {
         case 1:
             //printf("running runiDISF_scribbles_rem \n");
-            label_img = main_iDISF_scribbles_rem(argv[0], graph, num_init_seeds, iterations, &border_img, coords_user_seeds, num_markers, marker_sizes, function, all_borders, c1, c2, obj_markers);
+            label_img = main_iDISF_scribbles_rem(argv[0], graph, n_0, iterations, &border_img, coords_user_seeds, num_markers, marker_sizes, function, all_borders, c1, c2, obj_markers);
             break;
 
         case 3:
             //printf("running runiDISF \n");
-            label_img = main_iDISF(argv[0], graph, num_init_seeds, n_f, &border_img, coords_user_seeds, num_markers, marker_sizes, function, all_borders, c1, c2, obj_markers);
+            label_img = main_iDISF(argv[0], graph, n_0, n_f, &border_img, coords_user_seeds, num_markers, marker_sizes, function, all_borders, c1, c2, obj_markers);
             break;
 
         default:
