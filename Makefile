@@ -22,12 +22,13 @@ LIBS = -lm
 HEADER_INC = -I $(EXT_DIR) -I $(INCLUDE_DIR)
 LIB_INC = -L $(LIB_DIR) -lidisf
 
+
 #==============================================================================
 # Rules
 #==============================================================================
-.PHONY: all c python3 clean lib
+.PHONY: createdir all c python3 clean lib
 
-all: lib c python3
+all: createdir lib c python3
 
 lib: obj
 	$(eval ALL_OBJS := $(wildcard $(OBJ_DIR)/*.o))
@@ -40,13 +41,18 @@ lib2: obj
 obj: \
 	$(OBJ_DIR)/Utils.o \
 	$(OBJ_DIR)/IntList.o \
-	$(OBJ_DIR)/IntLabeledList.o \
 	$(OBJ_DIR)/Color.o \
 	$(OBJ_DIR)/PrioQueue.o \
 	$(OBJ_DIR)/Image.o \
 	$(OBJ_DIR)/Graph.o \
-	$(OBJ_DIR)/DISF.o \
 	$(OBJ_DIR)/iDISF.o 
+
+createdir:
+	if [ ! -d $(BIN_DIR) ]; then mkdir -p $(BIN_DIR); fi
+	if [ ! -d $(OBJ_DIR) ]; then mkdir -p $(OBJ_DIR); fi
+	if [ ! -d $(BUILD_DIR) ]; then mkdir -p $(BUILD_DIR); fi
+	if [ ! -d $(LIB_DIR) ]; then mkdir -p $(LIB_DIR); fi
+
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(INCLUDE_DIR)/%.h
 	$(CC) $(CFLAGS) -c $< -o $@ $(HEADER_INC) $(LIBS)
@@ -59,10 +65,11 @@ python3: lib
 	python3 python3/setup.py clean;
 
 clean:
-	rm -rf $(OBJ_DIR)/* ;
-	rm -rf $(BIN_DIR)/* ;
+	if [ -d $(OBJ_DIR) ]; then rm -r $(OBJ_DIR); fi
+	if [ -d $(BIN_DIR) ]; then rm -r $(BIN_DIR); fi
+	if [ -d $(BUILD_DIR) ]; then rm -r $(BUILD_DIR); fi
+	if [ -d $(LIB_DIR) ]; then rm -r $(LIB_DIR); fi
 	rm -rf $(PYTHON3_DIR)/*.so ;
-	rm -r $(BUILD_DIR) ;
-	xargs rm -rf < $(PYTHON3_DIR)/dir_libs.txt
-	rm -rf $(LIB_DIR)/* ;
+	if [ -f "$(PYTHON3_DIR)/dir_libs.txt" ]; then xargs rm -rf < $(PYTHON3_DIR)/dir_libs.txt; rm -r $(PYTHON3_DIR)/dir_libs.txt; fi
+	if [ -f "$(DEMO_DIR)/opencv_sed_model.yml.gz" ]; then rm -f $(DEMO_DIR)/opencv_sed_model.yml.gz; fi
 

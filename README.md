@@ -27,9 +27,8 @@ The following tools are required in order to start the installation.
 The following python libraries are required to compile the project.
 
 1. Package to build our iDISF python module: `pip3 install scikit-build cmake`
-2. Install Tkinter libraries for python3 to run the interface: `sudo apt-get install python3-tk`
+2. Install Tkinter libraries for python3 to run the interface: `sudo apt-get install python3-tk; python3 -m pip install git+https://github.com/RedFantom/ttkthemes`
 3. Install other common python libraries: `pip3 install -r requirements.txt`
-4. Install matplotlib to run the demo example DISF_demo.py: `pip install matplotlib`
         
 ## Compiling and cleaning
 
@@ -44,11 +43,12 @@ In this project, there are two demo files, one for each language supported (i.e.
 
 - The complete iDISF project can be executed by `./bin/DISF_demo`
 - For the command options, run `./bin/DISF_demo --help`
-- A demo example from iDISF in python3 (need matplotlib): `python3 DISF_demo.py`
+- A demo example from iDISF in python3: `python3 DISF_demo.py`
 
 ### Interaface
 
 - Run the user interface with the follow command: `python3 iDISF.py`
+- Our interface includes iDISF and Watershed segmentation. For Watershed, we use [higra](https://github.com/higra/Higra) package.
 
 ## Cite
 If this work was useful for your research, please cite our paper:

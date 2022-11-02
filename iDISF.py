@@ -8,7 +8,7 @@ from PIL import Image, ImageTk, ImageDraw
 import numpy as np
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-#from ttkthemes import ThemedStyle
+from ttkthemes import ThemedStyle
 import cv2
 import os
 import math
@@ -17,7 +17,7 @@ import higra as hg
 from cv2.ximgproc import createStructuredEdgeDetection
 
 try:
-    from utils import * # imshow, locate_resource, get_sed_model_file
+    from utils import imshow, locate_resource, get_sed_model_file
 except: # we are probably running from the cloud, try to fetch utils functions from URL
     import urllib.request as request; exec(request.urlopen('https://github.com/higra/Higra-Notebooks/raw/master/utils.py').read(), globals())
 
@@ -60,7 +60,7 @@ class DefaultWindow:
     
     try:
       self.style = ThemedStyle()
-      self.style.set_theme('breeze')
+      self.style.set_theme('yaru')
       self.usingTtkthemes = True
     except Exception as inst:
       self.usingTtkthemes = False
@@ -392,8 +392,11 @@ class SettingsWindow(DefaultWindow):
     self.segmFileName = ''
     self.labelsFileName = ''
 
-    self.detector = createStructuredEdgeDetection("./opencv_sed_model.yml.gz")
-    #self.detector = createStructuredEdgeDetection(get_sed_model_file())
+
+    if(os.path.isfile("./opencv_sed_model.yml.gz")):
+      self.detector = createStructuredEdgeDetection("./opencv_sed_model.yml.gz")
+    else:
+      self.detector = createStructuredEdgeDetection(get_sed_model_file())
     
     # other windows
     self.appImage = None
@@ -506,7 +509,7 @@ class SettingsWindow(DefaultWindow):
     self.itMax = 20
     self.itRange = self.itMax - self.itMin
 
-    self.idisfMethodList = ["Rem. by class","Rem. by class (clust)", "Rem. by relevance"] 
+    self.idisfMethodList = ["Seed removal by class", "Seed removal by relevance"] 
     self.functionList = ["Color distance", "Gradent variation", "Gradient variation norm.", "Sum gradient variation"] 
     self.bordersValue = tk.IntVar() 
 
@@ -705,16 +708,20 @@ class SettingsWindow(DefaultWindow):
     if(self.usingTtkthemes):
       self.scribblesSizeScale = ttk.Scale(master=self.scribblesSizeLabelName, from_ = self.minScribbleSize, to = self.maxScribbleSize, orient = tk.VERTICAL, command = self.setScribblesSize, length=50)
     else:
-      self.scribblesSizeScale = tk.Scale(master=self.scribblesSizeLabelName, from_ = self.maxScribbleSize, to = self.minScribbleSize, orient = tk.VERTICAL, command = self.setScribblesSize, resolution = 1, digits = 1, showvalue = 0, sliderlength=20, length=50)
-    self.scribblesSizeScale.grid(row=1, column=0, sticky='', padx=0, pady=0)
-    self.createWidgets(self.scribblesSizeScale)
-
+      self.scribblesSizeScale = tk.Scale(master=self.scribblesSizeLabelName, from_ = self.minScribbleSize, to = self.maxScribbleSize, orient = tk.VERTICAL, command = self.setScribblesSize, resolution = 1, digits = 2, showvalue = 4, sliderlength=50, length=50)
+    
     self.miniCanvas = tk.Canvas(master=self.scribblesSizeLabelName)
-    self.createWidgets(self.miniCanvas)
-    self.miniCanvas.grid(row=2, column=0, sticky='', padx=0, pady=0)
     #self.miniCanvas.config(width=16, height=16, bg="red")
     self.miniCanvas.config(width=20, height=20)
     self.miniCanvas_circle = None
+
+    self.scribblesSizeScale.set(4)
+    self.scribblesSizeScale.grid(row=1, column=0, sticky='', padx=0, pady=0)
+    self.createWidgets(self.scribblesSizeScale)
+    
+    self.createWidgets(self.miniCanvas)
+    self.miniCanvas.grid(row=2, column=0, sticky='', padx=0, pady=0)
+    
     self.setScribblesSize(self.minScribbleSize)
       
 
@@ -728,7 +735,7 @@ class SettingsWindow(DefaultWindow):
     self.labels.set(1)
       
     # save/show objects
-    self.showLabelFrame = ttk.LabelFrame(master=master, text='Show')
+    self.showLabelFrame = ttk.LabelFrame(master=master, text='Show/Save')
     self.showLabelFrame.grid(row=row, column=column, columnspan=columnspan, sticky=self.fill, padx=6, pady=4)
     self.createWidgets(self.showLabelFrame)
 
@@ -810,15 +817,16 @@ class SettingsWindow(DefaultWindow):
         self.itScale.set(1)
 
   # combobox event: change the path-cost function method
+  # ["Color distance", "Gradent variation", "Gradient variation norm.", "Sum gradient variation"] 
   def functionChange(self, event):
     if(self.funcList.get() == self.functionList[0]):
       self.setFunction(1)
     elif(self.funcList.get() == self.functionList[1]):
       self.setFunction(2)
     elif(self.funcList.get() == self.functionList[2]):
-      self.setFunction(4)
+      self.setFunction(3)
     else:
-      self.setFunction(5)
+      self.setFunction(4)
       
 
   def runSegm(self):
@@ -853,8 +861,6 @@ class SettingsWindow(DefaultWindow):
     segm_method = 1
     if(self.optList.get() == self.idisfMethodList[1]):
       segm_method = 2
-    elif(self.optList.get() == self.idisfMethodList[2]):
-      segm_method = 3
       # no algoritmo já adiciona a nf o numero de pixels do marcador de objeto
       max_nf = int(self.n0.get()) 
       if(int(self.iterations.get()) > max_nf):
@@ -870,7 +876,7 @@ class SettingsWindow(DefaultWindow):
     label_img = None
     border_img = None
 
-    print('markers:',markers,'marker_sizes:',marker_sizes,'segm_method:',segm_method, 'self.bordersValue.get():',self.bordersValue.get(),'self.appImage.objMarkers:',self.appImage.objMarkers)
+    #print('markers:',markers,'marker_sizes:',marker_sizes,'segm_method:',segm_method, 'self.bordersValue.get():',self.bordersValue.get(),'self.appImage.objMarkers:',self.appImage.objMarkers)
 
     label_img, border_img = iDISF_scribbles(img, int(self.n0.get()), int(self.iterations.get()), markers, marker_sizes, self.appImage.objMarkers, int(self.function.get()), float(self.c1.get()), float(self.c2.get()), segm_method, self.bordersValue.get())
     self.destroyDefaultWindows()
@@ -1425,6 +1431,8 @@ class AppImage(DefaultImageWindow):
     self.canvas_lines = []
     self.start_x = None
     self.start_y = None
+
+    self.canvas_shadow = None
     
     if(self.appSettings.scribblesType.get() == 0):
       self.color = self.fgColor
@@ -1450,6 +1458,7 @@ class AppImage(DefaultImageWindow):
 
     self.root.bind("<KeyRelease-c>", self.clearAndUpdateImage) # c key release
 
+    self.canvas.bind("<Motion>", self.mouseMotion)
     self.canvas.bind("<Button-1>", self.mousePressed)
     self.canvas.bind("<B1-Motion>", self.mouseMovementPressed) # mouse movement with the left button pressed 
     self.canvas.bind("<ButtonRelease-1>", self.mouseButtonReleased) # mouse button released
@@ -1506,6 +1515,7 @@ class AppImage(DefaultImageWindow):
     self.scale_img = 1.0
     self.image2Tk()
     self.appSettings.destroyDefaultWindows()
+    self.clearMarkers()
     self.updateWatershedStructures()
     
   def updateWatershedStructures(self):
@@ -1545,6 +1555,7 @@ class AppImage(DefaultImageWindow):
     self.clearMarkers()
     self.clearImage()
     self.image2Tk()
+    
   
   # clear the markers and updated it in settings window
   def clearMarkers(self):
@@ -1580,7 +1591,7 @@ class AppImage(DefaultImageWindow):
       color = self.bgColor
       for [x,y] in self.markers:
         draw = ImageDraw.Draw(self.currentImage)
-        draw.ellipse((x-ratio, y-ratio, x+ratio, y+ratio), fill=color)
+        draw.ellipse((x-ratio, y-ratio, x+ratio, y+ratio), fill=color, width=0)
       self.image2Tk()  
 
   # buttom event: delete the object markers (settings window)
@@ -1607,7 +1618,7 @@ class AppImage(DefaultImageWindow):
       color = self.fgColor
       for [x,y] in self.markers:
         draw = ImageDraw.Draw(self.currentImage)
-        draw.ellipse((x-ratio, y-ratio, x+ratio, y+ratio), fill=color)
+        draw.ellipse((x-ratio, y-ratio, x+ratio, y+ratio), fill=color, width=0)
       self.image2Tk() 
 
 
@@ -1662,7 +1673,7 @@ class AppImage(DefaultImageWindow):
     self.start_x = int(self.canvas.canvasx(event.x))
     self.start_y = int(self.canvas.canvasy(event.y))
 
-    width = self.appSettings.scribblesSizeScale.get()
+    width = self.appSettings.scribblesSizeScale.get()-1
     
     # create a rectangle
     self.canvas_rect = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y, fill="", width=int(width*self.scale_img), outline=color)
@@ -1710,7 +1721,7 @@ class AppImage(DefaultImageWindow):
     # get end position
     end_x, end_y = self.getImgCoords(event.x,event.y)
 
-    width = self.appSettings.scribblesSizeScale.get()
+    width = self.appSettings.scribblesSizeScale.get()-1
 
     # remove image scale from initial position
     self.start_x,self.start_y = (int(self.start_x / self.scale_img), int(self.start_y / self.scale_img))
@@ -1728,7 +1739,8 @@ class AppImage(DefaultImageWindow):
 
     # draw a rectangle using pillow
     draw = ImageDraw.Draw(self.img_markers)
-    draw.rectangle([self.start_x, self.start_y, end_x, end_y], outline=self.color, width=width)
+    
+    draw.rectangle([self.start_x, self.start_y, end_x, end_y], outline=self.color, width=int(width))
 
     if(abs(self.start_x-end_x) > width*2.5 and abs(self.start_y-end_y) > width*2.5):
       center = (min(self.start_x,end_x) + abs(self.start_x-end_x)/2, min(self.start_y,end_y) + abs(self.start_y-end_y)/2)
@@ -1737,15 +1749,36 @@ class AppImage(DefaultImageWindow):
       else: 
         color = self.fgColor
 
-      draw.ellipse((center[0]-int(width/2), center[1]-int(width/2), center[0]+int(width/2), center[1]+int(width/2)), fill=color)
+      draw.ellipse((center[0]-int(width/2), center[1]-int(width/2), center[0]+int(width/2), center[1]+int(width/2)), fill=color, width=0)
       
 
     self.drawMarkers()
     self.image2Tk()
 
+
+  def mouseMotion(self, event):
+    if(self.canvas_rect is not None):
+      return
+    
+    # save mouse drag start position
+    x = int(self.canvas.canvasx(event.x))
+    y = int(self.canvas.canvasy(event.y))
+
+    if(self.canvas_shadow is not None):
+      self.canvas.delete(self.canvas_shadow)
+
+    radio = int((self.appSettings.scribblesSizeScale.get()*self.scale_img)/2)
+
+    self.canvas_shadow = self.canvas.create_oval(x-radio, y-radio, x+radio, y+radio, fill='white', stipple='gray25', width = 0)
+
+
+
   def mousePressed(self, event):
     if(self.appSettings.scribblesType.get() == 0): self.color = self.fgColor
     else: self.color = self.bgColor
+
+    if(self.canvas_shadow is not None):
+      self.canvas.delete(self.canvas_shadow)
 
     self.lines = []
 
@@ -1781,6 +1814,9 @@ class AppImage(DefaultImageWindow):
       self.eraseScribbles(x,y)
       return    
 
+    if(self.canvas_shadow is not None):
+      self.canvas.delete(self.canvas_shadow)
+
     # get canvas position considering the scrollbars
     curX = int(self.canvas.canvasx(event.x))
     curY = int(self.canvas.canvasy(event.y))
@@ -1810,19 +1846,22 @@ class AppImage(DefaultImageWindow):
         self.canvas_center_rect = None
       return
     
+    if(self.canvas_shadow is not None):
+      self.canvas.delete(self.canvas_shadow)
+    
     x, y = self.getImgCoords(event.x,event.y)
 
     if(self.appSettings.scribblesType.get() == 3):
       self.eraseScribbles(x, y)
       return
 
-    ratio = int(self.appSettings.scribblesSizeScale.get()/2)
+    ratio = int(self.appSettings.scribblesSizeScale.get()/2)-1
       
     draw = ImageDraw.Draw(self.img_markers)
       
     if(len(self.lines) > 0):
       start_x, start_y = self.lines[0]
-      draw.ellipse((start_x-ratio, start_y-ratio, start_x+ratio, start_y+ratio), fill=self.color)
+      draw.ellipse((start_x-ratio, start_y-ratio, start_x+ratio, start_y+ratio), fill=self.color, width=0)
         
       for (x,y) in self.lines[1:]:
         #draw.line([(start_x,start_y), (x,y)], fill=self.color, width=ratio, joint='curve')
@@ -1830,28 +1869,28 @@ class AppImage(DefaultImageWindow):
         line.pop(0)
         
         for [x2,y2] in line:
-          draw.ellipse((x2-ratio, y2-ratio, x2+ratio, y2+ratio), fill=self.color)
+          draw.ellipse((x2-ratio, y2-ratio, x2+ratio, y2+ratio), fill=self.color, width=0)
           
         start_x, start_y = (x,y)
           
     else:
-      draw.ellipse((x-ratio, y-ratio, x+ratio, y+ratio), fill=self.color)
+      draw.ellipse((x-ratio, y-ratio, x+ratio, y+ratio), fill=self.color, width=0)
 
     self.drawMarkers()
     self.image2Tk()
 
 
   def eraseScribbles(self, x, y):
-    ratio = self.appSettings.scribblesSizeScale.get()/2
+    ratio = int(self.appSettings.scribblesSizeScale.get()/2)-1
     
     # draws a line using pillow
     draw = ImageDraw.Draw(self.img_markers)
     if(self.start_y is not None and self.start_x is not None):
       line = self.bresenham_line(self.start_x, self.start_y, x, y)  
       for [x2,y2] in line:
-        draw.ellipse((x2-ratio, y2-ratio, x2+ratio, y2+ratio), fill=(0,0,0))
+        draw.ellipse((x2-ratio, y2-ratio, x2+ratio, y2+ratio), fill=(0,0,0), width=0)
     else:
-      draw.ellipse((x-ratio, y-ratio, x+ratio, y+ratio), fill=(0,0,0))
+      draw.ellipse((x-ratio, y-ratio, x+ratio, y+ratio), fill=(0,0,0), width=0)
 
     self.start_x = x
     self.start_y = y
@@ -1925,6 +1964,7 @@ class AppImage(DefaultImageWindow):
 
     mask = np.bitwise_and(255-img2[:,:,0], 255-img2[:,:,2]) # 0 in markers coords
     
+    #print("img1 shape: ", img1.shape, " img2 shape: ", img2.shape, " mask shape: ", mask.shape)
     # set 0 in red and blue markers in all channels
     img1[:,:,0] = np.bitwise_and(img1[:,:,0], mask)
     img1[:,:,1] = np.bitwise_and(img1[:,:,1], mask)
@@ -1986,7 +2026,7 @@ class AppImage(DefaultImageWindow):
   # buttom menu event: Save scribbles to a text file
   def saveScribbles(self):
     self.getMarkers()
-    print(len(self.markers))
+    #print(len(self.markers))
 
     if(len(self.markers) == 0): 
       message = messagebox.showerror("Error", "No scribbles founded.")

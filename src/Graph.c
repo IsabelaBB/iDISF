@@ -9,12 +9,12 @@ inline double calcPathCost(float *mean_feat_tree, float *feats, int num_feats, d
 
     arc_cost = euclDistance(mean_feat_tree, feats, num_feats);
 
-    if (function == 1) // color distance
+    if (function == 1) // dynamic color distance (same as DISF)
         path_cost = MAX(cost_map, arc_cost);
     else
     {
         if (function == 2)
-        { // not normalization
+        { // not normalization 
             beta = MAX(MAX(1, alpha * c2), coef_variation_tree);
             diff_grad = arc_cost * pow(grad_adj, (1 / alpha)) * (1 / beta);
             path_cost = MAX(cost_map, diff_grad);
@@ -22,25 +22,28 @@ inline double calcPathCost(float *mean_feat_tree, float *feats, int num_feats, d
         else
         {
             if (function == 3)
-            { // beta normalization
-                beta = MAX(MAX(1, alpha * c2), coef_variation_tree) / (float)num_nodes_tree;
-                diff_grad = arc_cost * pow(grad_adj, (1 / alpha)) * (1 / beta);
+            { 
+                // sum gradient not norm
+                beta = MAX(MAX(1, alpha * c2), coef_variation_tree);
+                diff_grad = arc_cost + (pow(grad_adj, (1 / alpha)) * (1 / beta)); 
                 path_cost = MAX(cost_map, diff_grad);
+                
             }
             else
             {
                 if (function == 4)
                 { // cv normalization
-                    beta = MAX(MAX(1, alpha * c2), coef_variation_tree / (float)num_nodes_tree);
+                    beta = MAX(MAX(1, alpha * c2), coef_variation_tree / (float)num_nodes_tree); 
                     diff_grad = arc_cost * pow(grad_adj, (1 / alpha)) * (1 / beta);
                     path_cost = MAX(cost_map, diff_grad);
                 }
                 else
                 {
                     if (function == 5)
-                    { // sum gradient not norm
-                        beta = MAX(MAX(1, alpha * c2), coef_variation_tree);
-                        diff_grad = arc_cost + (pow(grad_adj, (1 / alpha)) * (1 / beta));
+                    { 
+                        // beta normalization
+                        beta = MAX(MAX(1, alpha * c2), coef_variation_tree) / (float)num_nodes_tree;
+                        diff_grad = arc_cost * pow(grad_adj, (1 / alpha)) * (1 / beta);
                         path_cost = MAX(cost_map, diff_grad);
                     }
                     else

@@ -28,10 +28,10 @@ The following python libraries are required to compile the project.
 	pip3 install scikit-build cmake
     2. Install Tkinter libraries for python3 to run the interface: 
 	sudo apt-get install python3-tk
+	python3 -m pip install git+https://github.com/RedFantom/ttkthemes
     3. Install other common python libraries: 
 	pip3 install -r requirements.txt
-    4. (Optional) Install matplotlib to run the demo example DISF_demo.py: 
-	pip install matplotlib
+	
 
 (3) Compiling and cleaning:
 

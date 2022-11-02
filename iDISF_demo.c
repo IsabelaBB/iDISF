@@ -9,7 +9,6 @@
 //=============================================================================
 #include "Image.h"
 #include "iDISF.h"
-#include "DISF.h"
 #include "Utils.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -27,23 +26,23 @@ Image *overlayBorders(Image *img, Image *border_img);
 
 void usage_iDISF_scribbles_rem(char *argv)
 {
-    printf("\n Usage    : %s --segm 1 [options]\n", argv); // 5 args
+    printf("\n Usage    : %s --rem 1 [options]\n", argv); // 5 args
     printf("\n Options  : \n");
     printf("           --i : Input image\n");
     printf("           --n0 : Number of init GRID seeds (>= 0)\n");
     printf("           --it : Iterations \n");
-    printf("           --f : Path-cost function. {1:color distance, 2:gradient-cost, 3:beta norm, 4:cv tree norm, 5:sum gradient-cost, 6: sum beta norm}\n");
+    printf("           --f : Path-cost function. { 1:color distance, 2:gradient-cost, 3:beta norm, 4:cv tree norm, 5:sum gradient-cost, 6: sum beta norm }\n");
     printf("\n Optional : \n");
-    printf("           --xseeds : Object seed x coord\n");
-    printf("           --yseeds : Object seed y coord\n");
+    printf("           --xseeds : Object seed x coord (for a single seed)\n");
+    printf("           --yseeds : Object seed y coord (for a single seed)\n");
     printf("           --file <scribbles.txt>: File name with the pixel coordinates of the scribbles\n");
     printf("           WARNING: Use --xseeds --yseeds OR --file\n");
     printf("           --inverse : Inverse the pixel coordinates of the scribbles. Can use any char with this flag to activate it. \n");
     printf("           --c1 : Used in path-cost functions 2-5. Interval: [0.1,1.0] \n");
     printf("           --c2 : Used in path-cost functions 2-5. Interval: [0.1,1.0] \n");
-    printf("           --max_markers : Define the number of scribbles that will be used. (Default: The number of scribbles in scribbles file)\n");
+    printf("           --max_markers : Define the number of scribbles that will be used. (Default: The number of scribbles equal to the scribbles file)\n");
     printf("           --obj_markers : Define the number of scribbles that will be labeled as object. (Default: all scribbles are labeled as object)\n");
-    printf("           --o <path/image>: Define the image name and its path.\n");
+    printf("           --o <path/image>: Define the output image name and its path.\n");
     printf("\n Seeds file format : \n");
     printf("          number of scribbles\\n \n");
     printf("          number of pixels in the scribble\\n \n");
@@ -53,7 +52,7 @@ void usage_iDISF_scribbles_rem(char *argv)
 
 void usage_iDISF(char *argv)
 {
-    printf("\n Usage    : %s --segm 3 [options]\n", argv); // 5 args
+    printf("\n Usage    : %s --rem 3 [options]\n", argv); // 5 args
     printf("\n Options  : \n");
     printf("           --i : Input image\n");
     printf("           --n0 : Number of init GRID seeds (>= 0)\n");
@@ -79,7 +78,7 @@ void usage_iDISF(char *argv)
 
 
 /**
- * Reads in a text file the coordinates of the marked pixels
+ * Reads the coordinates of the marked pixels in a text file 
  * @param fileMarkers in : char[255] -- a file name
  * @param max_markers in : int -- the maximum number of markers
  * @param marker_sizes out : &int[num_user_seeds] -- the size of each marker
@@ -180,6 +179,7 @@ int readMarkersFile(char fileMarkers[],
 // Main
 //=============================================================================
 
+// iDISF with removal by class
 Image *main_iDISF_scribbles_rem(char *argv, Graph *graph, int n_0, int iterations, Image **border_img, NodeCoords **coords_user_seeds, int num_markers, int *marker_sizes, int function, int all_borders, double c1, double c2, int obj_markers)
 {
     Image *label_img;
@@ -196,6 +196,7 @@ Image *main_iDISF_scribbles_rem(char *argv, Graph *graph, int n_0, int iteration
 }
 
 
+// iDISF with removal by relevance
 Image *main_iDISF(char *argv, Graph *graph, int n_0, int n_f, Image **border_img, NodeCoords **coords_user_seeds, int num_markers, int *marker_sizes, int function, int all_borders, double c1, double c2, int obj_markers)
 {
     Image *label_img;
@@ -207,7 +208,6 @@ Image *main_iDISF(char *argv, Graph *graph, int n_0, int n_f, Image **border_img
         printError("main", "Too many/few parameters or invalid params values!");
     }
 
-    printf("runiDISF, nf=%d \n", n_f);
     label_img = runiDISF(graph, n_0, n_f, border_img, coords_user_seeds, num_markers, marker_sizes, function, all_borders, c1, c2, obj_markers);
     return label_img;
 }
@@ -225,7 +225,6 @@ int main(int argc, char *argv[])
     double c1, c2;
     int max_markers;
     int obj_markers;
-    int segm;
     int seedRemoveOption;
     int i;
 
@@ -247,55 +246,51 @@ int main(int argc, char *argv[])
     char maxMarkers[256];
     char objMarkers[256];
     char fileName[256];
-    char segmChar[256];
     char nf[256];
-    char seedRemoveOpt[256];
+    char seedRemoveOption_char[256];
 
     // get arguments
+    parseArgs(argv, argc, (char *)"--rem", seedRemoveOption_char);
     parseArgs(argv, argc, (char *)"--i", imagePath);
     parseArgs(argv, argc, (char *)"--n0", n0);
-    parseArgs(argv, argc, (char *)"--it", it);
-    parseArgs(argv, argc, (char *)"--nf", nf);
+    parseArgs(argv, argc, (char *)"--f", f);
+    
+    parseArgs(argv, argc, (char *)"--nf", nf); // used only in iDISF with removal by relevance
+    parseArgs(argv, argc, (char *)"--it", it); // used only in iDISF with removal by class
+
     parseArgs(argv, argc, (char *)"--xseeds", xseeds);
     parseArgs(argv, argc, (char *)"--yseeds", yseeds);
     parseArgs(argv, argc, (char *)"--file", fileObjSeeds);
-    parseArgs(argv, argc, (char *)"--f", f);
+    
     parseArgs(argv, argc, (char *)"--inverse", inverse);
     parseArgs(argv, argc, (char *)"--all", all);
     parseArgs(argv, argc, (char *)"--c1", c1_char);
     parseArgs(argv, argc, (char *)"--c2", c2_char);
-    parseArgs(argv, argc, (char *)"--o", output);
     parseArgs(argv, argc, (char *)"--max_markers", maxMarkers);
     parseArgs(argv, argc, (char *)"--obj_markers", objMarkers);
-    parseArgs(argv, argc, (char *)"--segm", segmChar);
-    parseArgs(argv, argc, (char *)"--rem", seedRemoveOpt);
+    parseArgs(argv, argc, (char *)"--o", output);
+    
 
-    // mandaroy args
-    num_init_seeds = atoi(n0);
+    // mandatory args
     iterations = atoi(it);
     function = atoi(f);
 
-    if (strcmp(segmChar, "-") != 0)
+    if (strcmp(seedRemoveOption_char, "-") != 0)
     {
-        int tmp = atoi(segmChar);
+        int tmp = atoi(seedRemoveOption_char);
         if (tmp > 0 && tmp <= 4)
-            segm = tmp;
+            seedRemoveOption = tmp;
         else
-            segm = 1;
+            seedRemoveOption = 1;
     }
     else
-        segm = 1;
+        seedRemoveOption = 1;
 
     // some optional args
     if (strcmp(n0, "-") != 0)
         n_0 = atoi(n0);
     else
         n_0 = -1; // dont reduces the object seed set
-
-    if (strcmp(nb, "-") != 0)
-        n_b = atoi(nb);
-    else
-        n_b = 0;
 
     if (strcmp(nf, "-") != 0)
         n_f = atoi(nf);
@@ -376,14 +371,14 @@ int main(int argc, char *argv[])
 
     //printf("Segmentation mode \n");
         time = clock();
-        switch (segm)
+        switch (seedRemoveOption)
         {
         case 1:
             //printf("running runiDISF_scribbles_rem \n");
             label_img = main_iDISF_scribbles_rem(argv[0], graph, n_0, iterations, &border_img, coords_user_seeds, num_markers, marker_sizes, function, all_borders, c1, c2, obj_markers);
             break;
 
-        case 3:
+        case 2:
             //printf("running runiDISF \n");
             label_img = main_iDISF(argv[0], graph, n_0, n_f, &border_img, coords_user_seeds, num_markers, marker_sizes, function, all_borders, c1, c2, obj_markers);
             break;
@@ -410,17 +405,17 @@ int main(int argc, char *argv[])
         }
         else
         {
-            switch (segm)
+            switch (seedRemoveOption)
             {
             case 1:
-                sprintf(ovlayName, "%s_n0-%d_it-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_ovlay.ppm", imageName, num_init_seeds, iterations, c1, c2, function, num_markers, segm);
-                sprintf(labelsName, "%s_n0-%d_it-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_labels.pgm", imageName, num_init_seeds, iterations, c1, c2, function, num_markers, segm);
-                sprintf(bordersName, "%s_n0-%d_it-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_borders.pgm", imageName, num_init_seeds, iterations, c1, c2, function, num_markers, segm);
+                sprintf(ovlayName, "%s_n0-%d_it-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_ovlay.ppm", imageName, n_0, iterations, c1, c2, function, num_markers, seedRemoveOption);
+                sprintf(labelsName, "%s_n0-%d_it-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_labels.pgm", imageName, n_0, iterations, c1, c2, function, num_markers, seedRemoveOption);
+                sprintf(bordersName, "%s_n0-%d_it-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_borders.pgm", imageName, n_0, iterations, c1, c2, function, num_markers, seedRemoveOption);
                 break;
-            case 3:
-                sprintf(ovlayName, "%s_n0-%d_nf-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_ovlay.ppm", imageName, num_init_seeds, n_f, c1, c2, function, num_markers, segm);
-                sprintf(labelsName, "%s_n0-%d_nf-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_labels.pgm", imageName, num_init_seeds, n_f, c1, c2, function, num_markers, segm);
-                sprintf(bordersName, "%s_n0-%d_nf-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_borders.pgm", imageName, num_init_seeds, n_f, c1, c2, function, num_markers, segm);
+            case 2:
+                sprintf(ovlayName, "%s_n0-%d_nf-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_ovlay.ppm", imageName, n_0, n_f, c1, c2, function, num_markers, seedRemoveOption);
+                sprintf(labelsName, "%s_n0-%d_nf-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_labels.pgm", imageName, n_0, n_f, c1, c2, function, num_markers, seedRemoveOption);
+                sprintf(bordersName, "%s_n0-%d_nf-%d_c1-%.1f_c2-%.1f_f%d_numMarkers%d_segm%d_borders.pgm", imageName, n_0, n_f, c1, c2, function, num_markers, seedRemoveOption);
                 break;
             
             default:

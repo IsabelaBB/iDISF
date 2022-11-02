@@ -181,14 +181,8 @@ static PyObject* iDISF_scribbles(PyObject* self, PyObject* args)
         label_img = runiDISF_scribbles_rem(graph, n_0, iter, &border_img, coords, n_scribbles, size_scribbles, f, all_borders, c1, c2, n_obj_scribbles);
     }
     else{
-        if(segm_method == 2){
-            freeImage(&img);
-            label_img = runiDISF_scribbles_clust(graph, n_0, iter, &border_img, coords, n_scribbles, size_scribbles, f, all_borders, c1, c2, n_obj_scribbles/*, img*/);
-        }
-        else{
-            freeImage(&img);
-            label_img = runiDISF(graph, n_0, iter, &border_img, coords, n_scribbles, size_scribbles, f, all_borders, c1, c2, n_obj_scribbles);
-        }
+        freeImage(&img);
+        label_img = runiDISF(graph, n_0, iter, &border_img, coords, n_scribbles, size_scribbles, f, all_borders, c1, c2, n_obj_scribbles);
     }
 
     freeGraph(&graph);
