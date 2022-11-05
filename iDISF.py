@@ -263,7 +263,12 @@ class DefaultImageWindow(DefaultWindow):
     if(self.currentImage is not None):
       folder_selected = filedialog.asksaveasfilename(initialdir = "./",title = "Save file",filetypes = (("jpeg files","*.jpg"), ("png files","*.png"),("all files","*.*")))
       if(len(folder_selected) != 0):
-        self.currentImage.save(folder_selected)
+        if(self.currentImage.mode != 'RGB'):
+          image = self.currentImage.convert('RGB')
+          image.save(folder_selected)
+        else:
+          self.currentImage.save(folder_selected)
+        
     else:
       message = messagebox.showerror("Error", "No image founded.")
       return
@@ -504,7 +509,7 @@ class SettingsWindow(DefaultWindow):
     self.n0Min = 0
     self.n0Max = 8000
     self.n0Range = self.n0Max - self.n0Min
-
+    
     self.iterations = tk.StringVar()
     self.itMin = 1
     self.itMax = 20
@@ -571,7 +576,7 @@ class SettingsWindow(DefaultWindow):
     self.c1Scale.grid(row=0, column=1, columnspan=18, sticky=self.fill, padx=2, pady=0)
     self.c1Entry = ttk.Entry(master=self.c1Label, textvariable=self.c1, width=5)
     self.c1Entry.grid(row=0, column=19, sticky=self.fill, padx=0, pady=0)
-    self.setC1(str(self.c1Scale.get()))
+    self.setC1("7")
 
     ### c2
     self.c2Label = ttk.Label(master=master)
@@ -590,7 +595,7 @@ class SettingsWindow(DefaultWindow):
     self.c2Scale.grid(row=0, column=1, columnspan=18, sticky=self.fill, padx=2, pady=0)
     self.c2Entry = ttk.Entry(master=self.c2Label, textvariable=self.c2, validate='focusout', width=5)
     self.c2Entry.grid(row=0, column=19, sticky=self.fill, padx=0, pady=0)
-    self.setC2(str(self.c2Scale.get()))
+    self.setC2("8")
 
     # Functions
     self.funcLabel = ttk.Label(master=master)
@@ -870,7 +875,6 @@ class SettingsWindow(DefaultWindow):
 
     markers = np.array(markers)
     marker_sizes = np.array(marker_sizes)
-    #img = cv2.cvtColor(imgCV2, cv2.COLOR_BGR2RGB)
     
     img = np.array(imgCV2)
     if(len(img.shape) == 2):
@@ -878,8 +882,6 @@ class SettingsWindow(DefaultWindow):
 
     label_img = None
     border_img = None
-
-    #print('markers:',markers,'marker_sizes:',marker_sizes,'segm_method:',segm_method, 'self.bordersValue.get():',self.bordersValue.get(),'self.appImage.objMarkers:',self.appImage.objMarkers)
 
     label_img, border_img = iDISF_scribbles(img, int(self.n0.get()), int(self.iterations.get()), markers, marker_sizes, self.appImage.objMarkers, int(self.function.get()), float(self.c1.get()), float(self.c2.get()), segm_method, self.bordersValue.get())
     self.destroyDefaultWindows()
@@ -961,8 +963,6 @@ class SettingsWindow(DefaultWindow):
       message = messagebox.showerror("Error", "It's necessary to upload at least one image.")
       return
 
-    #original_image = cv2.cvtColor(self.appImage.getCurrentImage(), cv2.COLOR_BGR2RGB)
-    #original_image = cv2.cvtColor(np.array(self.appImage.getCurrentImage()), cv2.COLOR_BGR2RGB) # converting to opencv
     original_image = np.array(self.appImage.getCurrentImage()) # converting to opencv
     if(len(original_image.shape) == 2):
       original_image = np.stack((original_image,)*3, axis=-1)
@@ -1050,12 +1050,6 @@ class SettingsWindow(DefaultWindow):
     if(self.borders.get() == 0):
       self.appBorders.hide()
 
-    '''
-    self.appSegm,self.winSegm = self.newDefaultImageWindow(segm_img, 'Segmentation', 'Segmentation', "Could not read the image segmentation.")
-    if(self.segm.get() == 0):
-      self.appSegm.hide()
-    '''
-
     self.appSegm,self.winSegm = self.newSegmentationWindow(segm_img, only_fg_img, only_bg_img, img, 'Segmentation', 'Segmentation', "Could not read the image segmentation.")
     if(self.segm.get() == 0):
       self.appSegm.hide()
@@ -1066,7 +1060,6 @@ class SettingsWindow(DefaultWindow):
     if(self.appSegm is not None):
       folder_selected = filedialog.asksaveasfilename(initialdir = "./",title = "Save file",filetypes = (("jpeg files","*.jpg"), ("png files","*.png"),("all files","*.*")))
       if(len(folder_selected) != 0):
-        #cv2.imwrite(folder_selected, cv2.cvtColor(self.appSegm.image, cv2.COLOR_RGB2BGR))
         self.appSegm.currentImage.save(folder_selected)
     else:
       message = messagebox.showerror("Error", "No segmentation founded.")
@@ -1077,7 +1070,6 @@ class SettingsWindow(DefaultWindow):
     if(self.appBorders is not None):
       folder_selected = filedialog.asksaveasfilename(initialdir = "./",title = "Save file",filetypes = (("jpeg files","*.jpg"), ("png files","*.png"),("all files","*.*")))
       if(len(folder_selected) != 0):
-        #cv2.imwrite(folder_selected, self.appBorders.image)
         image = self.appBorders.currentImage.convert('RGB')
         image.save(folder_selected)
     else:
@@ -1089,7 +1081,6 @@ class SettingsWindow(DefaultWindow):
     if(self.appLabels is not None):
       folder_selected = filedialog.asksaveasfilename(initialdir = "./",title = "Save file",filetypes = (("jpeg files","*.jpg"), ("png files","*.png"),("all files","*.*")))
       if(len(folder_selected) != 0):
-        #cv2.imwrite(folder_selected, cv2.cvtColor(self.appLabels.image, cv2.COLOR_RGB2BGR))
         self.appLabels.currentImage.save(folder_selected)
     else:
       message = messagebox.showerror("Error", "No image labels founded.")
@@ -1181,15 +1172,6 @@ class SettingsWindow(DefaultWindow):
       self.appImage,self.windImage = self.newAppImageWindow(folder_selected, "Could not read any image.")
 
 
-  # close default (segmentation, borders and label) windows
-  def closeDefaultWindows(self):
-    if(self.appSegm != None and self.appSegm.close == False):
-      self.appSegm.hide()
-    if(self.appBorders != None and self.appLabels.close == False):
-      self.appBorders.hide()
-    if(self.appLabels != None and self.appLabels.close == False):
-      self.appLabels.hide()
-
   # destroy default (segmentation, borders and labels) windows
   def destroyDefaultWindows(self):
     if(self.appSegm != None):
@@ -1216,21 +1198,6 @@ class SettingsWindow(DefaultWindow):
     value = safe_cast(safe_cast(value, float, 0), int, 0) # convert : string -> float -> int
     value = validValue(value, self.n0Min, self.n0Max)             # get a valid value
     self.n0.set(str(value)) # change text
-
-  # change max and min grid seeds
-  def setN0Max(self, n0Max):
-    self.n0Max = min(n0Max,8000)
-    if(int(self.n0.get()) > self.n0Max):
-      self.n0.set(str(self.n0Max))
-    self.n0Scale.configure(to=self.n0Max)
-    self.n0Range = self.n0Max - self.n0Min
-    
-  def setN0Min(self, n0Min):
-    self.n0Min = n0Min
-    if(int(self.n0.get()) < self.n0Min):
-      self.n0.set(str(self.n0Min))
-    self.n0Scale.configure(from_=self.n0Min)
-    self.n0Range = self.n0Max - self.n0Min
 
 
   def setScribblesSize(self, value):
@@ -1580,27 +1547,6 @@ class AppImage(DefaultImageWindow):
 
 
   # buttom event: delete the object markers (settings window)
-  def clearObjMarkers_bkp(self):
-    if(self.objMarkers > 0):
-      
-      num_coords = 0
-      for i in range(0,self.objMarkers):
-        num_coords += self.markers_sizes[i]
-
-      self.markers_sizes = [self.markers_sizes[i] for i in range(self.objMarkers, len(self.markers_sizes))]
-      self.markers = [self.markers[i] for i in range(num_coords, len(self.markers))]
-
-      ratio = 2
-
-      self.objMarkers = 0
-      self.clearImage()
-      color = self.bgColor
-      for [x,y] in self.markers:
-        draw = ImageDraw.Draw(self.currentImage)
-        draw.ellipse((x-ratio, y-ratio, x+ratio, y+ratio), fill=color, width=0)
-      self.image2Tk()  
-
-  # buttom event: delete the object markers (settings window)
   def clearBgMarkers(self):
     img_markers = np.array(self.img_markers)
     img_markers[:,:,0] = img_markers[:,:,0] * 0
@@ -1608,24 +1554,6 @@ class AppImage(DefaultImageWindow):
     self.clearImage()
     self.drawMarkers()
     self.image2Tk()  
-
-  # buttom event: delete the object markers (settings window)
-  def clearBgMarkers_bkp(self):
-    if(len(self.markers_sizes) > self.objMarkers):
-      
-      num_obj_coords = 0
-      for i in range(0,self.objMarkers):
-        num_obj_coords += self.markers_sizes[i]
-
-      self.markers_sizes = [self.markers_sizes[i] for i in range(0, self.objMarkers)]
-      self.markers = [self.markers[i] for i in range(0, num_obj_coords)]
-      ratio = 2
-      self.clearImage()
-      color = self.fgColor
-      for [x,y] in self.markers:
-        draw = ImageDraw.Draw(self.currentImage)
-        draw.ellipse((x-ratio, y-ratio, x+ratio, y+ratio), fill=color, width=0)
-      self.image2Tk() 
 
 
   # make a copy from the original image to the current image
@@ -1829,7 +1757,6 @@ class AppImage(DefaultImageWindow):
 
     width = self.appSettings.scribblesSizeScale.get()
 
-    #print(self.start_x, self.start_y, curX, curY, width*self.scale_img)
     canvas_line = self.canvas.create_line(self.start_x, self.start_y, curX, curY, fill=self.hexColor, width=int(width*self.scale_img), joinstyle='round', capstyle='round', smooth=True)
     self.canvas_lines.append(canvas_line)
 
@@ -1905,6 +1832,122 @@ class AppImage(DefaultImageWindow):
     self.drawMarkers()
     self.image2Tk()
 
+  
+  def drawMarkers(self):
+    img1 = np.array(self.getCurrentImage())
+    if(len(img1.shape) == 2):
+      img1 = np.stack((img1,)*3, axis=-1)
+    img2 = np.array(self.img_markers)
+
+    mask = np.bitwise_and(255-img2[:,:,0], 255-img2[:,:,2]) # 0 in markers coords
+    
+    # set 0 in red and blue markers in all channels
+    img1[:,:,0] = np.bitwise_and(img1[:,:,0], mask)
+    img1[:,:,1] = np.bitwise_and(img1[:,:,1], mask)
+    img1[:,:,2] = np.bitwise_and(img1[:,:,2], mask)
+
+    # set 255 in red and blue markers in its respective channels
+    img1[:,:,0] = np.bitwise_or(img1[:,:,0], img2[:,:,0])
+    img1[:,:,2] = np.bitwise_or(img1[:,:,2], img2[:,:,2])
+
+    self.currentImage = Image.fromarray(img1) # convert from opencv to PIL
+
+
+  # create a list of images, imageNames and the variable list for the ListBox
+  # Call the destructor function if no image could be read.
+  def setImages(self, imageNames):
+    self.images = []
+    self.imageNames = []
+    i = 0
+
+    for imgFile in imageNames:
+      if(os.path.isfile(imgFile) is True):
+        try:
+          image = Image.open(imgFile)
+        except Exception as inst:
+          break
+        if(image is not None):
+          self.images.append(image)
+          self.imageNames.append(imgFile)
+          self.imagesListBox.insert(i, imgFile.split("/")[-1])
+          i+=1
+
+          image = np.array(image)
+          image = image.astype(np.float32)/255
+          if(len(image.shape) == 2):
+            image = np.stack((image,)*3, axis=-1)
+
+          self.gradient_list.append(self.appSettings.detector.detectEdges(image))
+          self.graph_list.append(hg.get_4_adjacency_graph(image.shape[:2]))
+          
+    if(len(self.images) == 0):
+      self.destructor()
+      message = messagebox.showerror("Error", "Could not read any image.")
+    else:
+      self.imagesListBox.selection_set(self.i)
+      self.clearImage()
+      self.clearMarkers()
+      self.image2Tk()
+      self.updateWatershedStructures()
+      self.scale_img = 1.0
+  
+
+  def saveImage(self):
+    image = self.currentImage
+    if(image is not None):
+      folder_selected = filedialog.asksaveasfilename(initialdir = "./",title = "Save file",filetypes = (("jpeg files","*.jpg"), ("png files","*.png"),("all files","*.*")))
+    if(len(folder_selected) != 0):
+      image.save(folder_selected)
+    else:
+      message = messagebox.showerror("Error", "No image founded.")
+      return
+
+
+  # buttom menu event: Save scribbles to a text file
+  def saveScribbles(self):
+    self.getMarkers()
+
+    if(len(self.markers) == 0): 
+      message = messagebox.showerror("Error", "No scribbles founded.")
+      return
+
+    folder_selected = filedialog.asksaveasfilename(initialdir = "./",title = "Save file", filetypes = (("Text File", "*.txt"),("all files","*.*")))
+    if(len(folder_selected) == 0):
+      return
+    
+    extension = folder_selected.split(".")[-1]
+    if(extension != 'txt'):
+      message = messagebox.showerror("Error", "Invalid format. Please use .txt")
+      return
+
+    f = open(folder_selected, 'w')
+    f.write("%d\n"%(len(self.markers_sizes)))
+    f.write("%d\n"%(self.markers_sizes[0]))
+    
+    index_sizes=0
+    acum=0
+    
+    for i in range(len(self.markers)-1):
+      if(acum == self.markers_sizes[index_sizes]):
+        index_sizes+=1
+        acum=0
+        f.write("%d\n"%(self.markers_sizes[index_sizes]))
+      
+      [x,y] = self.markers[i]
+      f.write("%d;%d\n"%(x,y))
+      acum+=1
+
+    if(acum == self.markers_sizes[index_sizes]):
+      index_sizes+=1
+      acum=0
+      f.write("%d\n"%(self.markers_sizes[index_sizes]))
+    
+    [x,y] = self.markers[-1]
+    f.write("%d;%d\n"%(x,y))
+    f.write("%d"%(self.objMarkers))
+    f.close()
+
+
   # from points p0 and p1, return a line (list of points) from p0 to p1
   def bresenham_line(self, x0, y0, x1, y1):
     steep = abs(y1 - y0) > abs(x1 - x0)
@@ -1961,125 +2004,6 @@ class AppImage(DefaultImageWindow):
       x_ant, y_ant = newMarker[-1]
     
     return newMarker
-  
-  
-  def drawMarkers(self):
-    #self.currentImage = ImageChops.logical_and(self.currentImage, self.img_markers)  
-    img1 = np.array(self.getCurrentImage())
-    if(len(img1.shape) == 2):
-      img1 = np.stack((img1,)*3, axis=-1)
-    img2 = np.array(self.img_markers)
-
-    mask = np.bitwise_and(255-img2[:,:,0], 255-img2[:,:,2]) # 0 in markers coords
-    
-    #print("img1 shape: ", img1.shape, " img2 shape: ", img2.shape, " mask shape: ", mask.shape)
-    # set 0 in red and blue markers in all channels
-    img1[:,:,0] = np.bitwise_and(img1[:,:,0], mask)
-    img1[:,:,1] = np.bitwise_and(img1[:,:,1], mask)
-    img1[:,:,2] = np.bitwise_and(img1[:,:,2], mask)
-
-    # set 255 in red and blue markers in its respective channels
-    img1[:,:,0] = np.bitwise_or(img1[:,:,0], img2[:,:,0])
-    img1[:,:,2] = np.bitwise_or(img1[:,:,2], img2[:,:,2])
-
-    self.currentImage = Image.fromarray(img1) # convert from opencv to PIL
-
-
-  # create a list of images, imageNames and the variable list for the ListBox
-  # Call the destructor function if no image could be read.
-  def setImages(self, imageNames):
-    self.images = []
-    self.imageNames = []
-    i = 0
-
-    for imgFile in imageNames:
-      if(os.path.isfile(imgFile) is True):
-        try:
-          image = Image.open(imgFile)
-        except Exception as inst:
-          break
-        if(image is not None):
-          self.images.append(image)
-          self.imageNames.append(imgFile)
-          self.imagesListBox.insert(i, imgFile.split("/")[-1])
-          i+=1
-
-          image = np.array(image)
-          image = image.astype(np.float32)/255
-          if(len(image.shape) == 2):
-            image = np.stack((image,)*3, axis=-1)
-
-          self.gradient_list.append(self.appSettings.detector.detectEdges(image))
-          self.graph_list.append(hg.get_4_adjacency_graph(image.shape[:2]))
-          
-    if(len(self.images) == 0):
-      self.destructor()
-      message = messagebox.showerror("Error", "Could not read any image.")
-    else:
-      self.imagesListBox.selection_set(self.i)
-      self.clearImage()
-      self.clearMarkers()
-      self.image2Tk()
-      self.updateWatershedStructures()
-      self.scale_img = 1.0
-  
-
-  def saveImage(self):
-    image = self.getCurrentImage()
-    if(image is not None):
-      folder_selected = filedialog.asksaveasfilename(initialdir = "./",title = "Save file",filetypes = (("jpeg files","*.jpg"), ("png files","*.png"),("all files","*.*")))
-    if(len(folder_selected) != 0):
-      image.save(folder_selected)
-    else:
-      message = messagebox.showerror("Error", "No image founded.")
-      return
-
-
-  # buttom menu event: Save scribbles to a text file
-  def saveScribbles(self):
-    self.getMarkers()
-    #print(len(self.markers))
-
-    if(len(self.markers) == 0): 
-      message = messagebox.showerror("Error", "No scribbles founded.")
-      return
-
-    folder_selected = filedialog.asksaveasfilename(initialdir = "./",title = "Save file", filetypes = (("Text File", "*.txt"),("all files","*.*")))
-    if(len(folder_selected) == 0):
-      return
-    
-    extension = folder_selected.split(".")[-1]
-    if(extension != 'txt'):
-      message = messagebox.showerror("Error", "Invalid format. Please use .txt")
-      return
-
-    f = open(folder_selected, 'w')
-    f.write("%d\n"%(len(self.markers_sizes)))
-    f.write("%d\n"%(self.markers_sizes[0]))
-    
-    index_sizes=0
-    acum=0
-    
-    for i in range(len(self.markers)-1):
-      if(acum == self.markers_sizes[index_sizes]):
-        index_sizes+=1
-        acum=0
-        f.write("%d\n"%(self.markers_sizes[index_sizes]))
-      
-      [x,y] = self.markers[i]
-      f.write("%d;%d\n"%(x,y))
-      acum+=1
-
-    if(acum == self.markers_sizes[index_sizes]):
-      index_sizes+=1
-      acum=0
-      f.write("%d\n"%(self.markers_sizes[index_sizes]))
-    
-    [x,y] = self.markers[-1]
-    f.write("%d;%d\n"%(x,y))
-    f.write("%d"%(self.objMarkers))
-    f.close()
-
 
   # buttom menu event: Load scribbles from a text file
   def loadScribbles(self):
