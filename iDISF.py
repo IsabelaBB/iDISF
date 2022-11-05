@@ -16,6 +16,7 @@ from scipy import ndimage
 import higra as hg
 from cv2.ximgproc import createStructuredEdgeDetection
 
+
 try:
     from utils import imshow, locate_resource, get_sed_model_file
 except: # we are probably running from the cloud, try to fetch utils functions from URL
@@ -872,6 +873,8 @@ class SettingsWindow(DefaultWindow):
     #img = cv2.cvtColor(imgCV2, cv2.COLOR_BGR2RGB)
     
     img = np.array(imgCV2)
+    if(len(img.shape) == 2):
+      img = np.stack((img,)*3, axis=-1)
 
     label_img = None
     border_img = None
@@ -961,6 +964,9 @@ class SettingsWindow(DefaultWindow):
     #original_image = cv2.cvtColor(self.appImage.getCurrentImage(), cv2.COLOR_BGR2RGB)
     #original_image = cv2.cvtColor(np.array(self.appImage.getCurrentImage()), cv2.COLOR_BGR2RGB) # converting to opencv
     original_image = np.array(self.appImage.getCurrentImage()) # converting to opencv
+    if(len(original_image.shape) == 2):
+      original_image = np.stack((original_image,)*3, axis=-1)
+    
 
     # markers will store the user provided information: 
     # first channel (red) corresponds to background
@@ -1959,7 +1965,9 @@ class AppImage(DefaultImageWindow):
   
   def drawMarkers(self):
     #self.currentImage = ImageChops.logical_and(self.currentImage, self.img_markers)  
-    img1 = np.array(self.currentImage)
+    img1 = np.array(self.getCurrentImage())
+    if(len(img1.shape) == 2):
+      img1 = np.stack((img1,)*3, axis=-1)
     img2 = np.array(self.img_markers)
 
     mask = np.bitwise_and(255-img2[:,:,0], 255-img2[:,:,2]) # 0 in markers coords
@@ -1998,6 +2006,9 @@ class AppImage(DefaultImageWindow):
 
           image = np.array(image)
           image = image.astype(np.float32)/255
+          if(len(image.shape) == 2):
+            image = np.stack((image,)*3, axis=-1)
+
           self.gradient_list.append(self.appSettings.detector.detectEdges(image))
           self.graph_list.append(hg.get_4_adjacency_graph(image.shape[:2]))
           
@@ -2014,10 +2025,11 @@ class AppImage(DefaultImageWindow):
   
 
   def saveImage(self):
-    if(self.currentImage is not None):
+    image = self.getCurrentImage()
+    if(image is not None):
       folder_selected = filedialog.asksaveasfilename(initialdir = "./",title = "Save file",filetypes = (("jpeg files","*.jpg"), ("png files","*.png"),("all files","*.*")))
     if(len(folder_selected) != 0):
-      self.currentImage.save(folder_selected)
+      image.save(folder_selected)
     else:
       message = messagebox.showerror("Error", "No image founded.")
       return
@@ -2180,7 +2192,8 @@ class AppImage(DefaultImageWindow):
 
   # return the curent image
   def getCurrentImage(self):
-    return self.images[self.i]
+    image = self.images[self.i]
+    return image
 
 
 #########################################################################
