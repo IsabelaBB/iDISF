@@ -45,7 +45,7 @@ In this project, there are two demo files, one for each language supported (i.e.
 - For the command options, run `./bin/DISF_demo --help`
 - A demo example from iDISF in python3: `python3 DISF_demo.py`
 
-### Interaface
+### Interface
 
 - Run the user interface with the follow command: `python3 iDISF.py`
 - Our interface includes iDISF and Watershed segmentation. For Watershed, we use [higra](https://github.com/higra/Higra) package.
