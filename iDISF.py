@@ -4,7 +4,7 @@
 ##################################
 
 from idisf import iDISF_scribbles
-from PIL import Image, ImageTk, ImageDraw
+from PIL import Image, ImageTk, ImageDraw, ImageEnhance
 import numpy as np
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -14,6 +14,9 @@ import os
 import math
 from scipy import ndimage
 import higra as hg
+import pydicom
+from pydicom.pixel_data_handlers.util import apply_modality_lut
+from pydicom.pixel_data_handlers import convert_color_space
 from cv2.ximgproc import createStructuredEdgeDetection
 
 
@@ -35,6 +38,117 @@ def validValue(val, valMin, valMax):
   elif(val > valMax):
     val = valMax
   return val
+
+
+class DicomImage():
+  def __init__(self, imagePath):
+    self.data = pydicom.dcmread(imagePath)
+
+  def convertImage(self):
+    arr = self.data.pixel_array.astype(np.float64) # get numpy array as representation of image data
+
+    # pixel_array seems to be the original, non-rescaled array.
+    # If present, window center and width refer to rescaled array
+    # -> do rescaling if possible.
+    if ('RescaleIntercept' in self.data) and ('RescaleSlope' in self.data):
+      intercept = self.data.RescaleIntercept  # single value
+      slope = self.data.RescaleSlope
+      arr = slope * arr + intercept
+
+    # get default window_center and window_width values
+    wc = (arr.max() + arr.min()) / 2.0
+    ww = arr.max() - arr.min() + 1.0
+
+    # overwrite with specific values from data, if available
+    if ('WindowCenter' in self.data) and ('WindowWidth' in self.data):
+      ew = self.data['WindowWidth']
+      ec = self.data['WindowCenter']
+      wc = int(ew.value[0] if ew.VM > 1 else ew.value)
+      ww = int(ec.value[0] if ec.VM > 1 else ec.value)
+    else:
+      wc = (arr.max() + arr.min()) / 2.0
+      ww = arr.max() - arr.min() + 1.0
+
+    return self.get_PGM_from_numpy_arr(arr, wc, ww)
+
+  def get_PGM_from_numpy_arr(self, arr, wc, ww):
+    """Given a 2D numpy array as input write
+    gray-value image data in the PGM
+    format into a byte string and return it.
+    arr: single-byte unsigned int numpy array
+    note: Tkinter's PhotoImage object seems to
+    accept only single-byte data
+    """
+
+    if arr.dtype != np.uint8:
+        raise ValueError
+    if len(arr.shape) != 2:
+        raise ValueError
+
+    # array.shape is (#rows, #cols) tuple; PGM input needs this reversed
+    col_row_string = ' '.join(reversed([str(x) for x in arr.shape]))
+
+    bytedata_string = '\n'.join(('P5', col_row_string, str(arr.max()),
+                                 arr.tostring()))
+    return bytedata_string
+
+  def getPILImage(self, brightness_factor = 1.0):
+    """Get Image object from Python Imaging Library(PIL)
+    Manipulate image brightness using brightness_factor parameter,
+       receives a float value,
+       Default = 1.0
+       Brighter > 1.0 | Darker < 1.0 
+    """
+    if ('PixelData' not in self.data):
+        raise TypeError("Cannot show image -- DICOM dataset does not have "
+                        "pixel data")
+
+    """
+    bits = self.data.BitsAllocated
+    samples = self.data.SamplesPerPixel
+    
+    if bits == 8 and samples == 1:
+      mode = "L"
+    elif bits == 8 and samples == 3:
+      mode = "RGB"
+    elif bits == 16:
+      mode = "I;16"
+    else:
+      raise TypeError("Don't know PIL mode for %d BitsAllocated "
+                        "and %d SamplesPerPixel" % (bits, samples))
+    """
+
+    #LUTification returns ndarrays
+    #can only apply LUT if pydicom is installed
+    image = self.get_LUT_value(self.data)
+
+    # PIL size = (width, height)
+    #size = (self.data.Columns, self.data.Rows)
+    
+    try:
+        MIN = np.min(image)
+        if MIN < 0:
+          MIN = -MIN
+
+        image = (image + MIN)/np.max(image)
+        image = (image * 255).astype(np.uint8)
+        im = Image.fromarray(image)#.convert(mode)
+
+    except:
+        #When pixel data has multiple frames, output the first one
+        MIN = np.min(image[0])
+        if MIN < 0:
+          MIN = -MIN
+
+        image = (image[0] + MIN)/np.max(image[0])
+        image = (image * 255).astype(np.uint8)
+        im = Image.fromarray(image)#.convert(mode)
+
+    return im
+
+  def get_LUT_value(self, data):
+    return apply_modality_lut(data.pixel_array,data)
+    
 
 class AutoScrollbar(ttk.Scrollbar):
   """ A scrollbar that hides itself if it's not needed. Works only for grid geometry manager """
@@ -1862,10 +1976,16 @@ class AppImage(DefaultImageWindow):
 
     for imgFile in imageNames:
       if(os.path.isfile(imgFile) is True):
-        try:
-          image = Image.open(imgFile)
-        except Exception as inst:
-          break
+
+        if(imgFile.split('.')[-1] == 'dcm'):
+          dicomImg = DicomImage(imgFile)
+          image = dicomImg.getPILImage()
+        else:
+          try:
+            image = Image.open(imgFile)
+          except Exception as inst:
+            break
+
         if(image is not None):
           self.images.append(image)
           self.imageNames.append(imgFile)
@@ -1890,6 +2010,8 @@ class AppImage(DefaultImageWindow):
       self.image2Tk()
       self.updateWatershedStructures()
       self.scale_img = 1.0
+  
+
   
 
   def saveImage(self):
