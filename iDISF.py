@@ -43,6 +43,7 @@ def validValue(val, valMin, valMax):
 class DicomImage():
   def __init__(self, imagePath):
     self.data = pydicom.dcmread(imagePath)
+    self.imagePath = imagePath
 
   def convertImage(self):
     arr = self.data.pixel_array.astype(np.float64) # get numpy array as representation of image data
@@ -92,6 +93,43 @@ class DicomImage():
                                  arr.tostring()))
     return bytedata_string
 
+  def histogram_equalization(self, img, no_bins):
+    
+    #img- the image as a numpy.array
+    #the appropriate number of bins, `no_bins` in the histogram is chosen by experiments, 
+    #until the contrast is convenient
+    
+    image_hist, bins = np.histogram(img.flatten(), no_bins, normed=True)
+    csum = image_hist.cumsum() 
+    cdf_mult = np.max(img) * csum / csum[-1] # cdf multiplied by a factor
+
+    #  linear interpolation of cdf_mult to get new pixel values
+    im_new = np.interp(img.flatten(), bins[:-1],  cdf_mult)
+
+    return im_new.reshape(img.shape), cdf_mult
+  
+  def get_pl_image(self, hist_equal=False, no_bins=None):
+    #dicom_filename- a string 'filename.dcm'
+    #no_bins is the number of bins for histogram when hist_equal=False, else it is None
+    #returns the np.array that defines the z-value for the heatmap representing the dicom image
+    
+    dic_file=pydicom.read_file(self.imagePath)
+    img=dic_file.pixel_array#get the image as a numpy.array
+    if hist_equal and isinstance(no_bins, int):
+        img_new=self.histogram_equalization(img, no_bins)
+        img_new = img_new[0]
+        img_new=np.array(img_new, dtype=np.int16)
+        return np.flipud(img_new)
+    else:
+        return np.flipud(img)
+  
+  def getPILImage2(self):
+    image=self.get_pl_image(hist_equal=True, no_bins=255*16)
+
+    print("MIN: ", np.min(image), " MAX: ", np.max(image))
+    im = Image.fromarray(image)
+    return im
+  
   def getPILImage(self, brightness_factor = 1.0):
     """Get Image object from Python Imaging Library(PIL)
     Manipulate image brightness using brightness_factor parameter,
@@ -127,21 +165,21 @@ class DicomImage():
     
     try:
         MIN = np.min(image)
-        if MIN < 0:
-          MIN = -MIN
+        MAX = np.max(image)
 
-        image = (image + MIN)/np.max(image)
-        image = (image * 255).astype(np.uint8)
+        image = (image - MIN)*((255.0 - 0)/(MAX - MIN))
+        #image = ((image - MIN)/np.max(image)) * 255
+        image = image.astype(np.uint8)
         im = Image.fromarray(image)#.convert(mode)
 
     except:
         #When pixel data has multiple frames, output the first one
         MIN = np.min(image[0])
-        if MIN < 0:
-          MIN = -MIN
-
-        image = (image[0] + MIN)/np.max(image[0])
-        image = (image * 255).astype(np.uint8)
+        MAX = np.max(image[0])
+        
+        image = (image[0] - MIN)*((255.0 - 0)/(MAX - MIN))
+        #image = ((image - MIN)/np.max(image)) * 255
+        image = image.astype(np.uint8)
         im = Image.fromarray(image)#.convert(mode)
 
     return im
@@ -1980,6 +2018,7 @@ class AppImage(DefaultImageWindow):
         if(imgFile.split('.')[-1] == 'dcm'):
           dicomImg = DicomImage(imgFile)
           image = dicomImg.getPILImage()
+          #image = dicomImg.getPILImage2()
         else:
           try:
             image = Image.open(imgFile)
