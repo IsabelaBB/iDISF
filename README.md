@@ -64,3 +64,13 @@ If this work was useful for your research, please cite our paper:
   organization={Springer}
 }
 ```
+
+## Contact
+
+Please, feel free to contact the authors for any unexpected behavior you might face (e.g., bugs). Moreover, if you’re interested in using our code, we appreciate if you cite this work in your project.
+
+- Isabela Borlido: isabela_borlido@hotmail.com
+- Felipe C. Belém: felipe.belem@ic.unicamp.br
+- Zenilton K. G. Do Patrocínio Jr.  zenilton@pucminas.br
+- Alexandre X. Falcão: afalcao@ic.unicamp.br
+- Silvio J. F. Guimarães: sjamil@pucminas.br
