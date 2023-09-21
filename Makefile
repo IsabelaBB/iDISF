@@ -26,9 +26,9 @@ LIB_INC = -L $(LIB_DIR) -lidisf
 #==============================================================================
 # Rules
 #==============================================================================
-.PHONY: createdir all c python3 clean lib
+.PHONY: createdir all c clean lib
 
-all: createdir lib c python3
+all: createdir lib c
 
 lib: obj
 	$(eval ALL_OBJS := $(wildcard $(OBJ_DIR)/*.o))
