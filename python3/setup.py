@@ -4,9 +4,9 @@ import numpy
 
 
 idisf_module = Extension("idisf",
-                sources = ["python3/iDISF_py3.c"],
-                include_dirs = ["./include", numpy.get_include()],
-                library_dirs = ["./lib"],
+                sources = ["iDISF_py3.c"],
+                include_dirs = ["../include", numpy.get_include()],
+                library_dirs = ["../lib"],
                 libraries = ["idisf"],
                 extra_compile_args = ["-O3", "-fopenmp"],
                 extra_link_args=['-lgomp', '-lstdc++', "-fPIC", "-ffast-math", "-march=skylake", "-mfma"]
