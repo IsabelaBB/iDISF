@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pillow = "*"
+numpy = "*"
+scipy = "*"
+opencv-python = "*"
+opencv-contrib-python = "*"
+higra = "*"
+matplotlib = "*"
+utils = "*"
+pydicom = "*"
+ttkthemes = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
