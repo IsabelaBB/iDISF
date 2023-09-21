@@ -7,3 +7,4 @@ higra
 matplotlib
 utils
 pydicom
+ttkthemes
