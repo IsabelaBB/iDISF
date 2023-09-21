@@ -28,7 +28,7 @@ Image *runiDISF_scribbles_rem(Graph *graph, int n_0, int iterations, Image **bor
 //=============================================================================
 // IntList* Functions
 //=============================================================================
-IntList *gridSampling(int num_cols, int num_rows, int *num_seeds, NodeCoords** coords_user_seeds, int num_user_seeds, int *marker_sizes, double *grad);
+IntList *gridSampling(int num_cols, int num_rows, int *num_seeds, NodeCoords** coords_user_seeds, int num_user_seeds, int *marker_sizes, double *grad, int *scribbled_seeds, int *nf);
 IntList *gridSampling_scribbles(int num_rows, int num_cols, int *n_0, NodeCoords **coords_user_seeds, int num_markers, int *marker_sizes, double *grad, int *labels_map, int obj_markers);
 
 IntList *selectKMostRelevantSeeds(Tree **trees, IntList **tree_adj, int num_nodes, int num_trees, int num_maintain, int num_user_seeds);
