@@ -346,14 +346,6 @@ Image *runiDISF(Graph *graph, // input: image graph in lab color space
     PrioQueue *queue;
     int scribbled_seeds = 0;
 
-    // mínimo de árvores é a quantidade de pixels marcados de objeto
-    //n_f += marker_sizes[0];
-    for (int i = 0; i < num_user_seeds; i++)
-    {
-        n_f += marker_sizes[i];
-        scribbled_seeds += marker_sizes[i];
-    }
-
     num_cols = graph->num_cols;
     num_rows = graph->num_rows;
     num_nodes = graph->num_nodes;
@@ -369,7 +361,7 @@ Image *runiDISF(Graph *graph, // input: image graph in lab color space
     want_borders = border_img != NULL;
 
     grad = computeGradient(graph, &alpha);
-    seed_set = gridSampling(num_cols, num_rows, &n_0, coords_user_seeds, num_user_seeds, marker_sizes, grad);
+    seed_set = gridSampling(num_cols, num_rows, &n_0, coords_user_seeds, num_user_seeds, marker_sizes, grad, &scribbled_seeds, &n_f);
 
     if (c1 <= 0)
         c1 = 0.7;
@@ -513,7 +505,6 @@ Image *runiDISF(Graph *graph, // input: image graph in lab color space
                         double path_cost;
                         path_cost = calcPathCost(mean_feat_tree, graph->feats[adj_index], num_feats, cost_map[node_index], trees[node_label]->num_nodes, grad[adj_index], coef_variation_tree, alpha, c2, function);
 
-                        //printf("Can this node be conquered by the current tree?\n");
                         // Can this node be conquered by the current tree?
                         if (path_cost < cost_map[adj_index])
                         {
@@ -562,7 +553,7 @@ Image *runiDISF(Graph *graph, // input: image graph in lab color space
 
         /*** SEED SELECTION ***/
         // Compute the number of seeds to be preserved
-        num_maintain = MAX((n_0 + scribbled_seeds) * exp(-iter), n_f);
+        num_maintain = MAX((n_0 + scribbled_seeds) * exp(-iter), scribbled_seeds + n_f);
 
         // Auxiliar var
         num_trees = seed_set->size;
@@ -572,7 +563,7 @@ Image *runiDISF(Graph *graph, // input: image graph in lab color space
         seed_set = selectKMostRelevantSeeds(trees, tree_adj, num_nodes, num_trees, num_maintain, num_user_seeds);
 
         // Compute the number of seeds to be removed
-        num_rem_seeds = num_trees - seed_set->size;
+        num_rem_seeds = num_trees - num_maintain;
         iter++;
         resetPrioQueue(&queue); // Clear the queue
 
@@ -733,7 +724,7 @@ IntList *gridSampling_scribbles(int num_rows, int num_cols, int *n_0,
 }
 
 // used in iDISF removal by relevance
-IntList *gridSampling(int num_cols, int num_rows, int *n_0, NodeCoords **coords_user_seeds, int num_user_seeds, int *marker_sizes, double *grad)
+IntList *gridSampling(int num_cols, int num_rows, int *n_0, NodeCoords **coords_user_seeds, int num_user_seeds, int *marker_sizes, double *grad, int *scribbled_seeds, int *nf)
 {
     float size, stride, delta_x, delta_y;
     int num_nodes, num_seeds;
@@ -773,6 +764,8 @@ IntList *gridSampling(int num_cols, int num_rows, int *n_0, NodeCoords **coords_
             {
                 label_seed[node_index] = true;
                 insertIntListTail(&seed_set, node_index);
+                (*nf)++;
+                (*scribbled_seeds)++;
             }
         }
     }
