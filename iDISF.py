@@ -4,24 +4,22 @@
 ##################################
 
 from idisf import iDISF_scribbles
-from PIL import Image, ImageTk, ImageDraw, ImageEnhance
+from PIL import Image, ImageTk, ImageDraw
 import numpy as np
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from ttkthemes import ThemedStyle
 import cv2
 import os
-import math
 from scipy import ndimage
 import higra as hg
 import pydicom
 from pydicom.pixel_data_handlers.util import apply_modality_lut
-from pydicom.pixel_data_handlers import convert_color_space
 from cv2.ximgproc import createStructuredEdgeDetection
 
 
 try:
-    from utils import imshow, locate_resource, get_sed_model_file
+    from utils import get_sed_model_file
 except: # we are probably running from the cloud, try to fetch utils functions from URL
     import urllib.request as request; exec(request.urlopen('https://github.com/higra/Higra-Notebooks/raw/master/utils.py').read(), globals())
 
@@ -207,16 +205,21 @@ class AutoScrollbar(ttk.Scrollbar):
 #     Default Windows class
 #########################################################################
 class DefaultWindow:
-  def __init__(self, root, titlePage, *args, **kwargs):
+  def __init__(self, root, titlePage):
     # init app
     self.root = root # initialize root window
     
     try:
       self.style = ThemedStyle()
-      self.style.set_theme('yaru')
+      self.style.set_theme('breeze')
       self.usingTtkthemes = True
     except Exception as inst:
-      self.usingTtkthemes = False
+      try:
+        self.style = ThemedStyle()
+        self.style.set_theme('yaru')
+        self.usingTtkthemes = True
+      except Exception as inst:
+        self.usingTtkthemes = False
     
     self.root.title(titlePage)  # set window title
     self.root.protocol('WM_DELETE_WINDOW', self.destructor)
@@ -422,7 +425,7 @@ class DefaultImageWindow(DefaultWindow):
           self.currentImage.save(folder_selected)
         
     else:
-      message = messagebox.showerror("Error", "No image founded.")
+      messagebox.showerror("Error", "No image founded.")
       return
   
   def image2Tk(self):
@@ -529,7 +532,7 @@ class PopupSpinbox(DefaultWindow):
       self.setAnswer = True
       self.destructor()
     else:
-      message = messagebox.showerror("Error", "Invalid value.")
+      messagebox.showerror("Error", "Invalid value.")
 
 
 #########################################################################
@@ -677,7 +680,7 @@ class SettingsWindow(DefaultWindow):
     self.createWidgets(self.n0Label)
     row+=1
 
-    self.n0LabelName = ttk.Label(master=self.n0Label, text='GRID Seeds', width=10)
+    self.n0LabelName = ttk.Label(master=self.n0Label, text='GRID Seeds', width=12)
     self.n0LabelName.grid(row=0, column=0, sticky=self.fill, padx=0, pady=0)
     
     if(self.usingTtkthemes):
@@ -997,7 +1000,7 @@ class SettingsWindow(DefaultWindow):
   # call iDISF_scribbles function
   def runiDISF(self):
     if(self.appImage is None or self.appImage.close == True):
-      message = messagebox.showerror("Error", "It's necessary to upload at least one image.")
+      messagebox.showerror("Error", "It's necessary to upload at least one image.")
       return
 
     markers = self.appImage.getMarkers()
@@ -1005,15 +1008,15 @@ class SettingsWindow(DefaultWindow):
     marker_sizes = self.appImage.getMarkerSizes()
     
     if(len(markers) == 0):
-      message = messagebox.showerror("Error", "It's necessary draw at least one scribble.")
+      messagebox.showerror("Error", "It's necessary draw at least one scribble.")
       return
 
     if(self.appImage.objMarkers == 0):
-      message = messagebox.showerror("Error", "It's necessary draw at least one object scribble.")
+      messagebox.showerror("Error", "It's necessary draw at least one object scribble.")
       return
 
     if(len(marker_sizes) == 1 and int(self.n0.get()) == 0):
-      message = messagebox.showerror("Error", "Set more GRID seeds or draw at least two scribbles.")
+      messagebox.showerror("Error", "Set more GRID seeds or draw at least two scribbles.")
       return
 
     segm_method = 1
@@ -1022,7 +1025,7 @@ class SettingsWindow(DefaultWindow):
       # no algoritmo já adiciona a nf o numero de pixels do marcador de objeto
       max_nf = int(self.n0.get()) 
       if(int(self.iterations.get()) > max_nf):
-        message = messagebox.showerror("Error", "The maximum number of final GRID trees is %d."%(max_nf))
+        messagebox.showerror("Error", "The maximum number of final GRID trees is %d."%(max_nf))
         return
 
     markers = np.array(markers)
@@ -1107,12 +1110,12 @@ class SettingsWindow(DefaultWindow):
         self.appSegm.hide()
         
     else:
-      message = messagebox.showerror("Error", "Could not read the image.")
+      messagebox.showerror("Error", "Could not read the image.")
 
     
   def runWatershed(self):
     if(self.appImage == None or self.appImage.close == True):
-      message = messagebox.showerror("Error", "It's necessary to upload at least one image.")
+      messagebox.showerror("Error", "It's necessary to upload at least one image.")
       return
 
     original_image = np.array(self.appImage.getCurrentImage()) # converting to opencv
@@ -1214,7 +1217,7 @@ class SettingsWindow(DefaultWindow):
       if(len(folder_selected) != 0):
         self.appSegm.currentImage.save(folder_selected)
     else:
-      message = messagebox.showerror("Error", "No segmentation founded.")
+      messagebox.showerror("Error", "No segmentation founded.")
       return
 
   # button event: Save image from appBorders window 
@@ -1225,7 +1228,7 @@ class SettingsWindow(DefaultWindow):
         image = self.appBorders.currentImage.convert('RGB')
         image.save(folder_selected)
     else:
-      message = messagebox.showerror("Error", "No image borders founded.")
+      messagebox.showerror("Error", "No image borders founded.")
       return
 
   # button event: Save image from appLabels window 
@@ -1235,7 +1238,7 @@ class SettingsWindow(DefaultWindow):
       if(len(folder_selected) != 0):
         self.appLabels.currentImage.save(folder_selected)
     else:
-      message = messagebox.showerror("Error", "No image labels founded.")
+      messagebox.showerror("Error", "No image labels founded.")
       return
 
   # checkbox event: Open or close the segmentation window
@@ -1281,7 +1284,7 @@ class SettingsWindow(DefaultWindow):
     app = DefaultImageWindow(wind, titlePage, self)
     app.setImage(imageName, img)
     if(app is None or app.currentImage is None):
-      message = messagebox.showerror("Error", errorMessage)
+      messagebox.showerror("Error", errorMessage)
     return app,wind
   
   def newSegmentationWindow(self, segm_img, img_fg, img_bg, orig_img, imageName, titlePage, errorMessage):
@@ -1289,7 +1292,7 @@ class SettingsWindow(DefaultWindow):
     app = SegmentationWindow(wind, titlePage, self)
     app.setImage(segm_img, img_fg, img_bg, orig_img, imageName)
     if(app is None or app.currentImage is None):
-      message = messagebox.showerror("Error", errorMessage)
+      messagebox.showerror("Error", errorMessage)
     return app,wind
 
   # create and open a new window with the class AppImage
@@ -1299,7 +1302,7 @@ class SettingsWindow(DefaultWindow):
     self.appImage = app
     app.setImages(files)
     if(app is None):
-      message = messagebox.showerror("Error", errorMessage)
+      messagebox.showerror("Error", errorMessage)
     return app,wind
 
 
@@ -1574,11 +1577,15 @@ class AppImage(DefaultImageWindow):
     #self.menu.add_command(label="Save", command=self.saveImage)
     self.saveMenu = tk.Menu(self.menu, tearoff=False)
     self.saveMenu.add_command(label="Save Image", command=self.saveImage)
-    self.saveMenu.add_command(label="Save Scribbles", command=self.saveScribbles)
+    self.saveMenu.add_command(label="Save Scribbles as txt", command=self.saveScribbles)
+    self.saveMenu.add_command(label="Save Scribbles as txt (FLIM/GFLIM)", command=self.saveScribblesFLIM)
+    self.saveMenu.add_command(label="Save Scribbles mask (png)", command=self.saveScribblesMask)
     self.menu.add_cascade(label="Save", menu=self.saveMenu)
     
     self.loadMenu = tk.Menu(self.menu, tearoff=False)
     self.loadMenu.add_command(label="Load Scribbles", command=self.loadScribbles)
+    self.loadMenu.add_command(label="Load Scribbles (FLIM/GFLIM)", command=self.loadScribblesFLIM)
+    self.loadMenu.add_command(label="Load Scribbles mask (png)", command=self.loadScribblesMask)
     self.menu.add_cascade(label="Load", menu=self.loadMenu)
 
     self.root.bind("<KeyRelease-c>", self.clearAndUpdateImage) # c key release
@@ -2041,7 +2048,7 @@ class AppImage(DefaultImageWindow):
           
     if(len(self.images) == 0):
       self.destructor()
-      message = messagebox.showerror("Error", "Could not read any image.")
+      messagebox.showerror("Error", "Could not read any image.")
     else:
       self.imagesListBox.selection_set(self.i)
       self.clearImage()
@@ -2056,11 +2063,11 @@ class AppImage(DefaultImageWindow):
   def saveImage(self):
     image = self.currentImage
     if(image is not None):
-      folder_selected = filedialog.asksaveasfilename(initialdir = "./",title = "Save file",filetypes = (("jpeg files","*.jpg"), ("png files","*.png"),("all files","*.*")))
+      folder_selected = filedialog.asksaveasfilename(initialfile=self.imageNames[self.i].split("/")[-1].split(".")[0], initialdir = "./",title = "Save file",filetypes = (("jpeg files","*.jpg"), ("png files","*.png"),("all files","*.*")))
     if(len(folder_selected) != 0):
       image.save(folder_selected)
     else:
-      message = messagebox.showerror("Error", "No image founded.")
+      messagebox.showerror("Error", "No image founded.")
       return
 
 
@@ -2069,16 +2076,16 @@ class AppImage(DefaultImageWindow):
     self.getMarkers()
 
     if(len(self.markers) == 0): 
-      message = messagebox.showerror("Error", "No scribbles founded.")
+      messagebox.showerror("Error", "No scribbles founded.")
       return
 
-    folder_selected = filedialog.asksaveasfilename(initialdir = "./",title = "Save file", filetypes = (("Text File", "*.txt"),("all files","*.*")))
+    folder_selected = filedialog.asksaveasfilename(initialfile=self.imageNames[self.i].split("/")[-1].split(".")[0], initialdir = "./",title = "Save file", filetypes = (("Text File", "*.txt"),("all files","*.*")))
     if(len(folder_selected) == 0):
       return
     
     extension = folder_selected.split(".")[-1]
     if(extension != 'txt'):
-      message = messagebox.showerror("Error", "Invalid format. Please use .txt")
+      messagebox.showerror("Error", "Invalid format. Please use .txt")
       return
 
     f = open(folder_selected, 'w')
@@ -2107,6 +2114,55 @@ class AppImage(DefaultImageWindow):
     f.write("%d;%d\n"%(x,y))
     f.write("%d"%(self.objMarkers))
     f.close()
+
+
+  def saveScribblesFLIM(self):
+    self.getMarkers()
+    
+    if(len(self.markers) == 0): 
+      messagebox.showerror("Error", "No scribbles founded.")
+      return
+
+    folder_selected = filedialog.asksaveasfilename(initialfile=self.imageNames[self.i].split("/")[-1].split(".")[0]+"-seeds.txt", initialdir = "./seeds",title = "Save file", filetypes = (("Text File", "*.txt"),("all files","*.*")))
+    if(len(folder_selected) == 0):
+      return
+    
+    extension = folder_selected.split(".")[-1]
+    if(extension != 'txt'):
+      messagebox.showerror("Error", "Invalid format. Please use .txt")
+      return
+    
+    lines = []
+    img = np.array(self.img_markers)
+    h, w, __ = img.shape
+    for x in reversed(range(h)):
+      for y in reversed(range(w)):
+        if(img[x,y][0] == 0 and img[x,y][1] == 0 and img[x,y][2] == 255):
+          lines.append("%d %d -1 %d"%(y,x,1))
+        if(img[x,y][0] == 255 and img[x,y][1] == 0 and img[x,y][2] == 0):
+          lines.append("%d %d -1 %d"%(y,x,0))
+
+    f = open(folder_selected, 'w')
+    f.write("%d %d %d\n"%(len(lines),self.currentImage.size[0],self.currentImage.size[1]))
+    
+    for line in lines:
+      f.write("%s\n"%(line)) 
+    f.close()
+
+
+  def saveScribblesMask(self):
+    if(self.img_markers is not None):
+      folder_selected = filedialog.asksaveasfilename(initialfile=self.imageNames[self.i].split("/")[-1].split(".")[0], initialdir = "./scribbles",title = "Save file",filetypes = (("png files","*.png"),("all files","*.*")))
+      if(len(folder_selected) != 0):
+        if(self.img_markers.mode != 'RGB'):
+          image = self.img_markers.convert('RGB')
+          image.save(folder_selected)
+        else:
+          self.img_markers.save(folder_selected)
+
+      else:
+        messagebox.showerror("Error", "No image founded.")
+        return
 
 
   # from points p0 and p1, return a line (list of points) from p0 to p1
@@ -2173,7 +2229,7 @@ class AppImage(DefaultImageWindow):
       return
 
     if(folder_selected.split('.')[-1] != 'txt'):
-      message = messagebox.showerror("Error", "Invalid format.")
+      messagebox.showerror("Error", "Invalid format.")
       return
 
     # lê o arquivo txt e armazena as coordenadas
@@ -2182,8 +2238,8 @@ class AppImage(DefaultImageWindow):
 
     coords = []
     size_scribbles = []
-    size_scribbles.append(int(lines[1]))
-    max_scribbles = int(lines[0])
+    size_scribbles.append(int(lines[1])) # size of the first scribble
+    max_scribbles = int(lines[0]) # number of scribbles
     
     index_sizes = 0
     acum=0
@@ -2228,6 +2284,75 @@ class AppImage(DefaultImageWindow):
     
     self.drawMarkers() # draw the image scribbles in the image showed
     self.image2Tk()
+
+
+  def loadScribblesFLIM(self):
+    folder_selected = filedialog.askopenfilename(initialfile=self.imageNames[self.i].split("/")[-1].split(".")[0]+"-seeds.txt", initialdir = "./seeds/",title = "Select file")
+    if(len(folder_selected) == 0):
+      return
+
+    if(folder_selected.split('.')[-1] != 'txt'):
+      messagebox.showerror("Error", "Invalid format.")
+      return
+
+    # lê o arquivo txt e armazena as coordenadas
+    with open(folder_selected, 'r') as f:
+      lines = f.readlines()
+
+    scribbles_ctrl = {}
+
+    for i in range(2,len(lines)):
+      vals = lines[i].strip().split(' ')
+      if(vals[3] in scribbles_ctrl):
+        scribbles_ctrl[vals[3]].append(tuple([int(vals[0]), int(vals[1])]))
+      else:
+        scribbles_ctrl[vals[3]] = []
+        scribbles_ctrl[vals[3]].append(tuple([int(vals[0]), int(vals[1])]))
+
+    if(len(scribbles_ctrl.keys()) == 0):
+      return
+    
+    # desenha os scribbles
+    self.clearMarkers()
+    self.clearImage()
+    draw = ImageDraw.Draw(self.img_markers)
+
+    print(scribbles_ctrl.keys())
+    
+    for key in scribbles_ctrl.keys():
+      if(key == '1'):
+        draw.point(scribbles_ctrl[key], fill=self.fgColor)
+      elif(key == '0'):
+        draw.point(scribbles_ctrl[key], fill=self.bgColor)
+      else:
+        draw.point(scribbles_ctrl[key], fill=self.bgColor)
+    
+    self.drawMarkers() # draw the image scribbles in the image showed
+    self.image2Tk()
+
+
+  def loadScribblesMask(self):
+    if(self.currentImage is not None):
+      file_selected = filedialog.askopenfilename(initialfile=self.imageNames[self.i].split("/")[-1].split(".")[0]+".png", initialdir = "./scribbles", filetypes = (("png files","*.png"),("all files","*.*")))
+
+      if(len(file_selected) != 0 and os.path.isfile(file_selected) is True):
+        img_markers = Image.open(file_selected)
+
+        if(img_markers.size != self.img_markers.size):
+          messagebox.showerror("Error", "The mask size is different from the current image.")
+          return
+
+        self.clearMarkers()
+        self.clearImage()
+        self.image2Tk()
+        self.img_markers = img_markers
+        self.drawMarkers()
+        self.image2Tk() 
+        
+      else:
+        messagebox.showerror("Error", "No image founded.")
+        return
+
 
 
   # return the markers
@@ -2359,7 +2484,7 @@ class SegmentationWindow(DefaultImageWindow):
 
 def main(): 
   root = tk.Tk()
-  app = SettingsWindow(root)
+  SettingsWindow(root)
   root.mainloop()
 
 if __name__ == '__main__':
