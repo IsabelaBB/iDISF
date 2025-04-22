@@ -17,6 +17,10 @@
 #include "Image.h"
 #include "iDISF.h"
 
+#if NPY_API_VERSION < 0x00000007
+#define NPY_INT              PyArray_INT
+#endif
+
 //=============================================================================
 // Prototypes
 //=============================================================================
@@ -243,7 +247,7 @@ PyObject *createPyObjectFromGrayImage(Image *img)
 
     dims = (npy_intp *)malloc(2 * sizeof(npy_intp));
     dims[0] = num_rows; dims[1] = num_cols;
-    pyobj = (PyObject *)PyArray_SimpleNew(2, dims, PyArray_INT);
+    pyobj = (PyObject *)PyArray_SimpleNew(2, dims, NPY_INT);
 
     #pragma omp parallel for \
         private(x,y,ptr) \

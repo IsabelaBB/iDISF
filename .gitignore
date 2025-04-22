@@ -37,5 +37,5 @@ obj/
 build/
 lib/
 python3/build
-python3/idisf.egg-info
+python3/iDISF.egg-info
 python3/dist
