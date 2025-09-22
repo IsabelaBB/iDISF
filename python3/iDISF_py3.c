@@ -84,7 +84,7 @@ static PyObject* iDISF_scribbles(PyObject* self, PyObject* args)
     Image *label_img, *border_img;
     Graph *graph;
     PyObject *in_obj, *in_arr, *label_obj, *border_obj;
-    PyObject *py_coords, *py_size_scribbles;
+    PyArrayObject *py_coords, *py_size_scribbles;
     npy_intp *dims;
     int *size_scribbles, n_scribbles;
     int length, n_obj_scribbles, f, segm_method, all_borders;
@@ -165,8 +165,8 @@ static PyObject* iDISF_scribbles(PyObject* self, PyObject* args)
 
     // -------------------------------------------------------------------------------
 
-    ndim = PyArray_NDIM(in_arr);
-    dims = (npy_intp *)PyArray_DIMS(in_arr);
+    ndim = PyArray_NDIM((PyArrayObject *)in_arr);
+    dims = (npy_intp *)PyArray_DIMS((PyArrayObject *)in_arr);
 
     if(ndim < 2 || ndim > 3) return PyErr_Format(PyExc_Exception, "The number of dimensions must be either 2 or 3!");
     if(ndim == 3 && dims[2] != 3) return PyErr_Format(PyExc_Exception, "The image must be RGB-colored (i.e., 3 channels)");
@@ -228,7 +228,7 @@ Graph *createGraphFromPyArray(PyObject *pyarr, int ndim, npy_intp *dims, Image *
     for(y = 0; y < num_rows; ++y)
         for(x = 0; x < num_cols; ++x)
             for(f = 0; f < num_channels; ++f)
-                img->val[x + num_cols * y][f] = *(int*)(PyArray_GETPTR3(pyarr, y, x, f));
+                img->val[x + num_cols * y][f] = *(int*)(PyArray_GETPTR3((PyArrayObject *)pyarr, y, x, f));
 
     graph = createGraph(img);
     //freeImage(&img);
@@ -256,7 +256,7 @@ PyObject *createPyObjectFromGrayImage(Image *img)
     for(y = 0; y < num_rows; y++)
         for(x = 0; x < num_cols; x++)
         {
-            ptr = (int*)PyArray_GETPTR2(pyobj, y, x);
+            ptr = (int*)PyArray_GETPTR2((PyArrayObject *)pyobj, y, x);
             *ptr = img->val[x + y*num_cols][0];
         }
 
