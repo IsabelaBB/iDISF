@@ -6,10 +6,6 @@
 #ifndef iDISF_H
 #define iDISF_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 //=============================================================================
 // Includes
 //=============================================================================
@@ -17,6 +13,10 @@ extern "C" {
 #include "IntList.h"
 #include "PrioQueue.h"
 #include <omp.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //=============================================================================
 // Image* Functions
