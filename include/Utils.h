@@ -6,10 +6,6 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 //=============================================================================
 // Includes
 //=============================================================================
@@ -20,6 +16,10 @@ extern "C" {
 #include <stdbool.h>
 #include <math.h>
 #include <time.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //=============================================================================
 // Definitions

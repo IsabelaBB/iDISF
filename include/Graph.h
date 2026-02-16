@@ -6,10 +6,6 @@
 #ifndef Graph_H
 #define Graph_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 //=============================================================================
 // Includes
 //=============================================================================
@@ -17,6 +13,10 @@ extern "C" {
 #include "Image.h"
 #include "Color.h"
 #include <omp.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //=============================================================================
 // Structures
